@@ -13,7 +13,7 @@ import (
 
 const (
 	curDir    = "C:/Users/yash.bhanushali/BackupTrial-1"
-	ipaddress = "192.168.1.114:2121"
+	ipaddress = "192.168.1.100:2221"
 )
 
 func main() {
@@ -50,7 +50,7 @@ func GetFiles(con *ftp.ServerConn, files chan *ftp.Entry, quit chan int) {
 	//fmt.Println(file)
 	//log.Fatal("BAs")
 	//inodes := make(chan *ftp.Entry)
-	var folder string = "/Downloads/"
+	var folder string = "/"
 	RecursiveFetch(con, folder, files)
 	quit <- 0
 
@@ -85,8 +85,8 @@ func RecursiveFetch(con *ftp.ServerConn, folder string, files chan *ftp.Entry) {
 
 		} else if en.Type == 1 {
 			files <- en
-			//result := filepath.Join(folder, en.Name)
-			//RecursiveFetch(con, result, files)
+			result := filepath.Join(folder, en.Name)
+			RecursiveFetch(con, result, files)
 			//continue
 
 		} else {
