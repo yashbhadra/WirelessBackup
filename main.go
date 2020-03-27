@@ -13,21 +13,30 @@ import (
 
 const (
 	curDir    = "C:/Users/yash.bhanushali/BackupTrial-1"
-	ipaddress = "192.168.1.100:2221"
+	ipaddress = "192.168.1.101:2221"
+	username  = "anonymous"
+	password  = "android"
 )
+
+type File struct {
+	Name string
+	Type ftp.EntryType
+	Path string
+}
 
 func main() {
 	fmt.Println("Hello world")
 	con := Connection(ipaddress)
-	files := make(chan *ftp.Entry)
+	files := make(chan *File)
 	quit := make(chan int)
 	go GetFiles(con, files, quit)
-	var entry *ftp.Entry
+	var entry *File
 
 	for {
 		select {
 		case entry = <-files:
-			fmt.Println(entry.Name)
+			//fmt.Println(entry.Name)
+			Store(entry, con)
 		case <-quit:
 			return
 		}
@@ -39,18 +48,18 @@ func Connection(ipaddress string) *ftp.ServerConn {
 	if err != nil {
 		log.Fatal("Couldnt connect to the server.")
 	}
-	err = con.Login("anonymous", "")
+	err = con.Login("anonymous", "android")
 	if err != nil {
 		log.Fatal("cannot login")
 	}
 	return con
 }
-func GetFiles(con *ftp.ServerConn, files chan *ftp.Entry, quit chan int) {
+func GetFiles(con *ftp.ServerConn, files chan *File, quit chan int) {
 
 	//fmt.Println(file)
 	//log.Fatal("BAs")
 	//inodes := make(chan *ftp.Entry)
-	var folder string = "/"
+	var folder string = ""
 	RecursiveFetch(con, folder, files)
 	quit <- 0
 
@@ -72,22 +81,33 @@ err = con.Stor("c.txt", buff)
 if err != nil {
 	fmt.Println(err)
 }*/
-func RecursiveFetch(con *ftp.ServerConn, folder string, files chan *ftp.Entry) {
+func RecursiveFetch(con *ftp.ServerConn, folder string, files chan *File) {
 	entries, err := con.List(folder)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	for _, en := range entries {
 
 		if en.Type == 0 {
 			//Code to include all the file into a map or channel or sometthing
-			files <- en
+			temp := &File{
+				Name: en.Name,
+				Type: en.Type,
+				Path: folder,
+			}
+			files <- temp
 
 		} else if en.Type == 1 {
-			files <- en
 			result := filepath.Join(folder, en.Name)
+			temp := &File{
+				Name: en.Name,
+				Type: en.Type,
+				Path: result,
+			}
+			files <- temp
+			//fmt.Println(folder)
 			RecursiveFetch(con, result, files)
-			//continue
 
 		} else {
 			continue
@@ -95,20 +115,34 @@ func RecursiveFetch(con *ftp.ServerConn, folder string, files chan *ftp.Entry) {
 	}
 	return
 }
-func Store(con ftp.ServerConn, en *ftp.Entry) {
-	path := filepath.Join(curDir, en.Name)
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
-	if err != nil {
-		log.Fatal(err)
+func Store(entry *File, con *ftp.ServerConn) {
+	if entry.Type == 0 {
+		path := filepath.Join(curDir, entry.Path, entry.Name)
+		file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(entry.Path + entry.Name)
+		result, err := con.Retr(filepath.Join(entry.Path, entry.Name))
+		if err != nil {
+			log.Fatal("I m here", err)
+		}
+		_, err = io.Copy(file, result)
+		if err != nil {
+			log.Fatal("Cannot Copy", err)
+		}
+		result.Close()
+
+	} else if entry.Type == 1 {
+
+		//fmt.Println(curDir + "/" + entry.Name)
+
+		path := filepath.Join(curDir, entry.Path)
+		fmt.Println(path)
+		os.Mkdir(path, 0777)
+
+	} else {
+		return
 	}
-	result, err := con.Retr(en.Name)
-	if err != nil {
-		log.Fatal(err)
-	}
-	_, err = io.Copy(file, result)
-	if err != nil {
-		log.Fatal("Cannot Copyy", err)
-	}
-	result.Close()
 
 }
