@@ -1,6 +1,5 @@
 # WirelessBackup
 
-This project is the implementation of a wireless backup service for android mobile phones. You can backup all of your mobile data onto your laptop with out connecting your phone with a 
-cord. Just download and run a file server application onto your mobile phone and run this program on your laptop. After this, just sit back and let this program backup your entire 
-mobile phone.
-Note: You will have to change the constants like ip address and directory path and make sure that the laptop and phone are on the same wifi network.
+This project introduces a wireless backup service for Android mobile phones, leveraging the concurrency features of the GO language such as go routines and channels. It enables users to back up their mobile data to their laptop without needing to connect via cords. By installing a file server application on the mobile phone and running the program on the laptop, users can effortlessly initiate and manage the backup process. 
+
+Remember to adjust constants like IP address and directory paths to ensure both devices are on the same Wi-Fi network.
